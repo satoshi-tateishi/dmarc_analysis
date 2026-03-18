@@ -10,7 +10,7 @@
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
+        "name": "注釈とアラート",
         "type": "dashboard"
       }
     ]
@@ -101,7 +101,7 @@
       },
       "targets": [
         {
-          "alias": "Messages",
+          "alias": "メール件数",
           "bucketAggs": [
             {
               "field": "date_begin",
@@ -130,7 +130,7 @@
           "timeField": "date_begin"
         }
       ],
-      "title": "DMARC Messages Over Time",
+      "title": "DMARC メール件数の推移",
       "type": "timeseries"
     },
     {
@@ -139,42 +139,63 @@
         "uid": "dmarc-elasticsearch"
       },
       "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "passed_dmarc"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "判定"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "index": 0,
+                        "text": "失敗"
+                      },
+                      "1": {
+                        "index": 1,
+                        "text": "成功"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
           },
-          "mappings": [
-            {
-              "options": {
-                "false": {
-                  "color": "red",
-                  "index": 1,
-                  "text": "Fail"
-                },
-                "true": {
-                  "color": "green",
-                  "index": 0,
-                  "text": "Pass"
-                }
-              },
-              "type": "value"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "source_reverse_dns.keyword"
+            },
+            "properties": [
               {
-                "color": "red",
-                "value": null
-              },
+                "id": "displayName",
+                "value": "逆引きホスト名"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Sum"
+            },
+            "properties": [
               {
-                "color": "green",
-                "value": 1
+                "id": "displayName",
+                "value": "件数"
               }
             ]
           }
-        },
-        "overrides": []
+        ]
       },
       "gridPos": {
         "h": 8,
@@ -184,31 +205,15 @@
       },
       "id": 2,
       "options": {
-        "displayLabels": [
-          "name",
-          "percent"
-        ],
-        "legend": {
-          "displayMode": "list",
-          "placement": "right",
-          "showLegend": true
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
         },
-        "pieType": "pie",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "showHeader": true
       },
       "targets": [
         {
-          "alias": "DMARC result",
+          "alias": "DMARC 判定",
           "bucketAggs": [
             {
               "field": "passed_dmarc",
@@ -238,8 +243,24 @@
           "timeField": "date_begin"
         }
       ],
-      "title": "DMARC Pass / Fail",
-      "type": "piechart"
+      "title": "DMARC 判定結果",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {
+              "passed_dmarc": 0,
+              "Sum": 1
+            },
+            "renameByName": {
+              "Sum": "件数",
+              "passed_dmarc": "判定"
+            }
+          }
+        }
+      ],
+      "type": "table"
     },
     {
       "datasource": {
@@ -247,56 +268,47 @@
         "uid": "dmarc-elasticsearch"
       },
       "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "source_ip_address.keyword"
             },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
+            "properties": [
               {
-                "color": "green",
-                "value": null
+                "id": "displayName",
+                "value": "送信元 IP"
               },
               {
-                "color": "red",
-                "value": 80
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "112.78.125.20": {
+                        "index": 0,
+                        "text": "112.78.125.20（さくらインターネット）"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Sum"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "件数"
               }
             ]
           }
-        },
-        "overrides": []
+        ]
       },
       "gridPos": {
         "h": 9,
@@ -306,24 +318,30 @@
       },
       "id": 3,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "showHeader": true
       },
       "targets": [
         {
-          "alias": "Top source IPs",
+          "alias": "主な送信元 IP",
           "bucketAggs": [
             {
               "field": "source_ip_address.keyword",
               "id": "2",
+              "settings": {
+                "min_doc_count": "1",
+                "order": "desc",
+                "orderBy": "1",
+                "size": "10"
+              },
+              "type": "terms"
+            },
+            {
+              "field": "source_reverse_dns.keyword",
+              "id": "3",
               "settings": {
                 "min_doc_count": "1",
                 "order": "desc",
@@ -349,8 +367,26 @@
           "timeField": "date_begin"
         }
       ],
-      "title": "Top Source IPs",
-      "type": "timeseries"
+      "title": "主な送信元 IP",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {
+              "source_ip_address.keyword": 0,
+              "source_reverse_dns.keyword": 1,
+              "Sum": 2
+            },
+            "renameByName": {
+              "Sum": "件数",
+              "source_reverse_dns.keyword": "逆引きホスト名",
+              "source_ip_address.keyword": "送信元 IP"
+            }
+          }
+        }
+      ],
+      "type": "table"
     },
     {
       "datasource": {
@@ -358,55 +394,7 @@
         "uid": "dmarc-elasticsearch"
       },
       "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
+        "defaults": {},
         "overrides": []
       },
       "gridPos": {
@@ -417,20 +405,15 @@
       },
       "id": 4,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "showHeader": true
       },
       "targets": [
         {
-          "alias": "Organizations",
+          "alias": "主な送信元組織",
           "bucketAggs": [
             {
               "field": "org_name.keyword",
@@ -460,8 +443,8 @@
           "timeField": "date_begin"
         }
       ],
-      "title": "Top Reporting Organizations",
-      "type": "timeseries"
+      "title": "主なレポート送信元組織",
+      "type": "table"
     }
   ],
   "refresh": "30s",
@@ -480,8 +463,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "DMARC Overview",
+  "title": "DMARC 概要",
   "uid": "dmarc-overview",
-  "version": 1,
+  "version": 3,
   "weekStart": ""
 }
