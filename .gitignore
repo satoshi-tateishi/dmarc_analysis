@@ -1,4 +1,13 @@
 .DS_Store
 .env
+.env.local
+.env.*.local
 __pycache__/
 *.pyc
+*.pyo
+*.log
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+docker-compose.override.yml

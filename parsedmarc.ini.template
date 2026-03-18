@@ -1,5 +1,5 @@
-; parsedmarc は環境変数を直接展開しない前提で、.env の値をこのファイルへ転記して使います。
-; さくらインターネットの情報を入れるときは IMAP の項目だけ差し替えてください。
+; This file is rendered from environment variables at container startup.
+; Do not put secrets here. Set them in .env.
 ; 安全運用の前提:
 ; - delete = False のまま、成功メールは archive_folder 配下へ移動
 ; - 失敗メールは archive_folder/Invalid へ移動
@@ -15,20 +15,20 @@ debug = False
 offline = False
 
 [imap]
-host = mail.example.com
-port = 993
-ssl = True
-user = dmarc-reports@example.com
-password = change-me
+host = ${IMAP_HOST}
+port = ${IMAP_PORT}
+ssl = ${IMAP_USE_SSL}
+user = ${IMAP_USERNAME}
+password = ${IMAP_PASSWORD}
 
 [mailbox]
 ; 常時監視よりもローカル負荷を抑えるため、既定では必要時実行にしています
-watch = False
+watch = True
 ; 成功/失敗にかかわらず即削除はせず、フォルダ分離で安全に管理します
 delete = False
-reports_folder = INBOX
+reports_folder = ${IMAP_REPORTS_FOLDER}
 ; 実行時に Aggregate / Forensic / SMTP-TLS / Invalid がこの配下に作成されます
-archive_folder = DMARC/Archive
+archive_folder = ${IMAP_ARCHIVE_FOLDER}
 batch_size = 10
 
 [elasticsearch]

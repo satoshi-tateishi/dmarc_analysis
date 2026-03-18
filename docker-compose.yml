@@ -15,8 +15,9 @@ services:
       - es_data:/usr/share/elasticsearch/data
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9200 >/dev/null || exit 1"]
-      interval: 15s
-      timeout: 5s
+      interval: 30s
+      timeout: 30s
+      start_period: 90s
       retries: 20
 
   grafana:
@@ -36,6 +37,8 @@ services:
       - "${GRAFANA_PORT:-3000}:3000"
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
 
   parsedmarc:
     image: ${PARSEDMARC_IMAGE:-xbblabs/parsedmarc:latest}
@@ -46,9 +49,21 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
+    environment:
+      IMAP_HOST: ${IMAP_HOST:-}
+      IMAP_PORT: ${IMAP_PORT:-993}
+      IMAP_USERNAME: ${IMAP_USERNAME:-}
+      IMAP_PASSWORD: ${IMAP_PASSWORD:-}
+      IMAP_USE_SSL: ${IMAP_USE_SSL:-true}
+      IMAP_REPORTS_FOLDER: ${IMAP_REPORTS_FOLDER:-INBOX}
+      IMAP_ARCHIVE_FOLDER: ${IMAP_ARCHIVE_FOLDER:-DMARC/Archive}
     volumes:
-      - ./parsedmarc.ini:/etc/parsedmarc.ini:ro
-    command: ["-c", "/etc/parsedmarc.ini"]
+      - ./parsedmarc.ini.template:/app/parsedmarc.ini.template:ro
+      - ./scripts/render_parsedmarc_ini.py:/app/render_parsedmarc_ini.py:ro
+    entrypoint:
+      - /bin/sh
+      - -c
+      - python /app/render_parsedmarc_ini.py /app/parsedmarc.ini.template /tmp/parsedmarc.ini && exec parsedmarc -c /tmp/parsedmarc.ini
 
   imap-cleanup:
     image: python:3.12-alpine
