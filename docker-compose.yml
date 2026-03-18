@@ -1,0 +1,79 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-8.17.0}
+    container_name: dmarc-elasticsearch
+    restart: unless-stopped
+    mem_limit: ${ELASTICSEARCH_MEM_LIMIT:-768m}
+    mem_reservation: ${ELASTICSEARCH_MEM_RESERVATION:-512m}
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: ${ES_JAVA_OPTS:--Xms256m -Xmx256m}
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9200 >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+
+  grafana:
+    image: grafana/grafana:${GRAFANA_VERSION:-11.1.0}
+    container_name: dmarc-grafana
+    restart: unless-stopped
+    mem_limit: ${GRAFANA_MEM_LIMIT:-256m}
+    mem_reservation: ${GRAFANA_MEM_RESERVATION:-128m}
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_SERVER_HTTP_PORT: "3000"
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+  parsedmarc:
+    image: ${PARSEDMARC_IMAGE:-xbblabs/parsedmarc:latest}
+    container_name: dmarc-parsedmarc
+    restart: unless-stopped
+    mem_limit: ${PARSEDMARC_MEM_LIMIT:-256m}
+    mem_reservation: ${PARSEDMARC_MEM_RESERVATION:-128m}
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - ./parsedmarc.ini:/etc/parsedmarc.ini:ro
+    command: ["-c", "/etc/parsedmarc.ini"]
+
+  imap-cleanup:
+    image: python:3.12-alpine
+    container_name: dmarc-imap-cleanup
+    restart: unless-stopped
+    mem_limit: ${IMAP_CLEANUP_MEM_LIMIT:-128m}
+    mem_reservation: ${IMAP_CLEANUP_MEM_RESERVATION:-64m}
+    environment:
+      IMAP_HOST: ${IMAP_HOST:-}
+      IMAP_PORT: ${IMAP_PORT:-993}
+      IMAP_USERNAME: ${IMAP_USERNAME:-}
+      IMAP_PASSWORD: ${IMAP_PASSWORD:-}
+      IMAP_USE_SSL: ${IMAP_USE_SSL:-true}
+      IMAP_ARCHIVE_FOLDER: ${IMAP_ARCHIVE_FOLDER:-DMARC/Archive}
+      IMAP_CLEANUP_ENABLED: ${IMAP_CLEANUP_ENABLED:-true}
+      IMAP_CLEANUP_INTERVAL_HOURS: ${IMAP_CLEANUP_INTERVAL_HOURS:-24}
+      IMAP_CLEANUP_AGGREGATE_RETENTION_DAYS: ${IMAP_CLEANUP_AGGREGATE_RETENTION_DAYS:-30}
+      IMAP_CLEANUP_FORENSIC_RETENTION_DAYS: ${IMAP_CLEANUP_FORENSIC_RETENTION_DAYS:-30}
+      IMAP_CLEANUP_SMTP_TLS_RETENTION_DAYS: ${IMAP_CLEANUP_SMTP_TLS_RETENTION_DAYS:-30}
+      IMAP_CLEANUP_INVALID_RETENTION_DAYS: ${IMAP_CLEANUP_INVALID_RETENTION_DAYS:-90}
+    volumes:
+      - ./scripts/imap_cleanup.py:/app/imap_cleanup.py:ro
+    working_dir: /app
+    command: ["python", "/app/imap_cleanup.py"]
+
+volumes:
+  es_data:
+  grafana_data:
