@@ -273,13 +273,9 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "source_ip_address.keyword"
+              "options": "送信元 IP"
             },
             "properties": [
-              {
-                "id": "displayName",
-                "value": "送信元 IP"
-              },
               {
                 "id": "mappings",
                 "value": [
@@ -307,12 +303,34 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Sum"
+              "options": "失敗"
             },
             "properties": [
               {
-                "id": "displayName",
-                "value": "件数"
+                "id": "custom.displayMode",
+                "value": "color-text"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
               }
             ]
           }
@@ -348,13 +366,13 @@
               "type": "terms"
             },
             {
-              "field": "source_reverse_dns.keyword",
+              "field": "passed_dmarc",
               "id": "3",
               "settings": {
-                "min_doc_count": "1",
+                "min_doc_count": "0",
                 "order": "desc",
                 "orderBy": "1",
-                "size": "10"
+                "size": "2"
               },
               "type": "terms"
             }
@@ -378,18 +396,26 @@
       "title": "主な送信元 IP",
       "transformations": [
         {
+          "id": "groupingToMatrix",
+          "options": {
+            "columnField": "passed_dmarc",
+            "rowField": "source_ip_address.keyword",
+            "valueField": "Sum"
+          }
+        },
+        {
           "id": "organize",
           "options": {
             "excludeByName": {},
             "indexByName": {
-              "source_ip_address.keyword": 0,
-              "source_reverse_dns.keyword": 1,
-              "Sum": 2
+              "source_ip_address.keyword/passed_dmarc": 0,
+              "0": 1,
+              "1": 2
             },
             "renameByName": {
-              "Sum": "件数",
-              "source_reverse_dns.keyword": "逆引きホスト名",
-              "source_ip_address.keyword": "送信元 IP"
+              "source_ip_address.keyword/passed_dmarc": "送信元 IP",
+              "0": "失敗",
+              "1": "成功"
             }
           }
         }

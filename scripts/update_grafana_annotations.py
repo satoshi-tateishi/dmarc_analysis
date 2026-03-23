@@ -43,12 +43,12 @@ def update_dashboard(dashboard: dict, annotations: dict[str, str]) -> None:
     target_override = None
     for override in overrides:
         matcher = override.get("matcher", {})
-        if matcher.get("id") == "byName" and matcher.get("options") == "source_ip_address.keyword":
+        if matcher.get("id") == "byName" and matcher.get("options") == "送信元 IP":
             target_override = override
             break
 
     if target_override is None:
-        raise ValueError("source_ip_address.keyword override not found")
+        raise ValueError("送信元 IP override not found")
 
     properties = target_override.setdefault("properties", [])
     mapping_property = None
