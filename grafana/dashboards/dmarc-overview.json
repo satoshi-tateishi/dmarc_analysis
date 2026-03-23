@@ -268,7 +268,9 @@
         "uid": "dmarc-elasticsearch"
       },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "noValue": "0"
+        },
         "overrides": [
           {
             "matcher": {
@@ -352,7 +354,7 @@
       },
       "targets": [
         {
-          "alias": "主な送信元 IP",
+          "alias": "合計",
           "bucketAggs": [
             {
               "field": "source_ip_address.keyword",
@@ -362,17 +364,6 @@
                 "order": "desc",
                 "orderBy": "1",
                 "size": "10"
-              },
-              "type": "terms"
-            },
-            {
-              "field": "passed_dmarc",
-              "id": "3",
-              "settings": {
-                "min_doc_count": "0",
-                "order": "desc",
-                "orderBy": "1",
-                "size": "2"
               },
               "type": "terms"
             }
@@ -391,31 +382,84 @@
           "query": "*",
           "refId": "A",
           "timeField": "date_begin"
+        },
+        {
+          "alias": "成功",
+          "bucketAggs": [
+            {
+              "field": "source_ip_address.keyword",
+              "id": "2",
+              "settings": {
+                "min_doc_count": "1",
+                "order": "desc",
+                "orderBy": "1",
+                "size": "10"
+              },
+              "type": "terms"
+            }
+          ],
+          "datasource": {
+            "type": "elasticsearch",
+            "uid": "dmarc-elasticsearch"
+          },
+          "metrics": [
+            {
+              "field": "message_count",
+              "id": "1",
+              "type": "sum"
+            }
+          ],
+          "query": "passed_dmarc:true",
+          "refId": "B",
+          "timeField": "date_begin"
         }
       ],
       "title": "主な送信元 IP",
       "transformations": [
         {
-          "id": "groupingToMatrix",
+          "id": "joinByField",
           "options": {
-            "columnField": "passed_dmarc",
-            "rowField": "source_ip_address.keyword",
-            "valueField": "Sum"
+            "byField": "source_ip_address.keyword",
+            "mode": "outer"
           }
         },
         {
           "id": "organize",
           "options": {
-            "excludeByName": {},
+            "renameByName": {
+              "Sum 1": "total",
+              "Sum 2": "passed"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "failed",
+            "mode": "binary",
+            "binary": {
+              "left": "total",
+              "operator": "-",
+              "right": "passed"
+            },
+            "replaceFields": false
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "total": true
+            },
             "indexByName": {
-              "source_ip_address.keyword/passed_dmarc": 0,
-              "0": 1,
-              "1": 2
+              "source_ip_address.keyword": 0,
+              "passed": 1,
+              "failed": 2
             },
             "renameByName": {
-              "source_ip_address.keyword/passed_dmarc": "送信元 IP",
-              "0": "失敗",
-              "1": "成功"
+              "source_ip_address.keyword": "送信元 IP",
+              "passed": "成功",
+              "failed": "失敗"
             }
           }
         }
@@ -478,6 +522,22 @@
         }
       ],
       "title": "主なレポート送信元組織",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {
+              "org_name.keyword": 0,
+              "Sum": 1
+            },
+            "renameByName": {
+              "org_name.keyword": "組織名",
+              "Sum": "件数"
+            }
+          }
+        }
+      ],
       "type": "table"
     }
   ],
