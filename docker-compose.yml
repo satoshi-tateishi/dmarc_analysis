@@ -10,7 +10,7 @@ services:
       xpack.security.enabled: "false"
       ES_JAVA_OPTS: ${ES_JAVA_OPTS:--Xms256m -Xmx256m}
     ports:
-      - "${ELASTICSEARCH_PORT:-9200}:9200"
+      - "127.0.0.1:${ELASTICSEARCH_PORT:-9200}:9200"
     volumes:
       - es_data:/usr/share/elasticsearch/data
     healthcheck:
